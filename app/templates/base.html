@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Keitaro wrapper{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.0.6/css/pico.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.default.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
+  <script src="{{ url_for('static', path='app.js') }}" defer></script>
+</head>
+<body>
+  <header class="container">
+    <nav>
+      <ul><li><a href="/campaigns" class="brand">Keitaro wrapper</a></li></ul>
+      <ul>
+        <li><a href="/campaigns">Кампании</a></li>
+        <li><a href="/campaigns/new" role="button" class="btn-sm">Новая кампания</a></li>
+      </ul>
+    </nav>
+    {% if settings.keitaro_fake %}
+      <p class="banner demo">Демо-режим: Keitaro в памяти, настоящий трекер не используется</p>
+    {% elif not settings.keitaro_api_key %}
+      <p class="banner bad">Не задан KEITARO_API_KEY — укажите ключ в файле .env</p>
+    {% endif %}
+  </header>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

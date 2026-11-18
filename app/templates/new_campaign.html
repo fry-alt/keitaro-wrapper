@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Новая кампания — Keitaro wrapper{% endblock %}
+{% block content %}
+<article class="narrow">
+  <header><h2>Новая кампания</h2></header>
+  {% if error %}<p class="msg bad">{{ error }}</p>{% endif %}
+
+  <form method="post" action="/campaigns/new" id="new-campaign">
+    <label for="name">Name</label>
+    <fieldset role="group">
+      <span class="prefix">{{ settings.campaign_prefix }}</span>
+      <input id="name" name="name" required autocomplete="off" placeholder="campaign1"
+             value="{{ (form.name or '')|replace(settings.campaign_prefix, '', 1) }}">
+    </fieldset>
+
+    <label for="country">Geo</label>
+    <select id="country" name="country" multiple class="country-select" placeholder="Страны, например AU">
+      {% for code, title in countries.items() %}
+        <option value="{{ code }}" {% if code in (form.countries or []) %}selected{% endif %}>{{ code }} — {{ title }}</option>
+      {% endfor %}
+    </select>
+    <small>Всех из этих стран первый поток отправит на {{ settings.redirect_url }}</small>
+
+    <label for="offer_id">Offer</label>
+    <select id="offer_id" name="offer_id" class="offer-search" placeholder="Поиск оффера по ID или названию">
+      {% if form.offer %}<option value="{{ form.offer.id }}" selected>[{{ form.offer.id }}] {{ form.offer.name }}</option>{% endif %}
+    </select>
+    <small>Остальных второй поток отправит на этот оффер</small>
+
+    <button type="submit" class="create">Create</button>
+  </form>
+
+  <footer class="muted">
+    Домен <code>{{ settings.default_domain }}</code> ·
+    группа <code>{{ settings.default_group }}</code> ·
+    источник <code>{{ settings.default_traffic_source }}</code>
+  </footer>
+</article>
+{% endblock %}

@@ -1,0 +1,89 @@
+:root {
+  --pico-font-size: 15px;
+  --dirty-bg: #fff8db;
+  --dirty-border: #e9c46a;
+  --new-bg: #eefaf0;
+  --ok: #1f7a3a;
+  --bad: #b42318;
+}
+
+.brand { font-weight: 700; }
+.muted { color: var(--pico-muted-color); }
+.btn-sm { padding: .3rem .7rem; font-size: .85rem; width: auto; margin: 0; }
+form.inline { margin: 0; }
+.toolbar { display: flex; gap: .75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.toolbar > * { width: auto; margin: 0; }
+article.narrow { max-width: 640px; }
+
+.banner, .msg { padding: .6rem .9rem; border-radius: var(--pico-border-radius); }
+.banner.demo { background: #eef2ff; color: #3730a3; }
+.banner.bad, .msg.bad { background: #fdecea; color: var(--bad); }
+.msg.ok { background: #e8f6ec; color: var(--ok); }
+
+/* поток */
+.stream { padding: 0; overflow: hidden; transition: background-color .2s; }
+.stream-head {
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  flex-wrap: wrap; margin: 0; padding: .75rem 1rem;
+}
+.stream > .msg, .stream > p { margin: .75rem 1rem; }
+.stream.dirty { background: var(--dirty-bg); box-shadow: 0 0 0 2px var(--dirty-border); }
+.stream.dirty .stream-head { background: #fdf0b8; }
+.stream .actions { display: flex; gap: .5rem; }
+.badge {
+  display: inline-block; padding: .05rem .45rem; border-radius: 999px; font-size: .75rem;
+  background: #e5e7eb; color: #374151; vertical-align: middle;
+}
+.badge.warn { background: var(--dirty-border); color: #4a3500; }
+.badge.new { background: #c9f0d3; color: #14532d; }
+
+table.offers { margin: 0; }
+table.offers th, table.offers td { background: transparent; vertical-align: middle; }
+table.offers .share { white-space: nowrap; width: 12rem; }
+table.offers .row-actions { text-align: right; width: 9rem; }
+table.offers tfoot th { font-weight: 600; }
+table.offers tfoot .bad { color: var(--bad); }
+tr.new td { background: var(--new-bg); }
+tr.removed td { color: var(--pico-muted-color); }
+tr.removed .offer-name { text-decoration: line-through; }
+.was { color: var(--pico-muted-color); margin-left: .25rem; }
+
+/* доля: клик по проценту открывает поле для ручного ввода */
+details.share-edit { display: inline-block; margin: 0; border: 0; padding: 0; }
+details.share-edit summary {
+  display: inline; cursor: pointer; text-decoration: underline dotted; list-style: none;
+}
+details.share-edit summary::after { display: none; }
+details.share-edit summary::-webkit-details-marker { display: none; }
+details.share-edit form { display: flex; gap: .3rem; margin: .4rem 0 0; }
+details.share-edit input { width: 5rem; margin: 0; padding: .2rem .4rem; height: auto; }
+button.pin {
+  background: none; border: 0; padding: 0 .2rem; margin: 0; width: auto;
+  filter: grayscale(1); opacity: .35; cursor: pointer;
+}
+button.pin.on { filter: none; opacity: 1; }
+button.pin:hover { opacity: .8; }
+
+form.add-offer { display: flex; gap: .5rem; align-items: center; padding: .75rem 1rem; margin: 0; }
+form.add-offer .ts-wrapper { flex: 1; min-width: 0; }
+/* Pico растягивает кнопки форм на всю ширину — внутри строк это не нужно */
+form.add-offer button, details.share-edit form button { flex: 0 0 auto; width: auto; }
+form.add-offer select { margin: 0; }
+
+/* Tom Select внутри Pico */
+.ts-wrapper { margin-bottom: var(--pico-spacing); }
+form.add-offer .ts-wrapper { margin-bottom: 0; }
+.ts-control { min-height: 2.6rem; border-radius: var(--pico-border-radius); }
+.ts-control input { margin: 0 !important; border: 0 !important; height: auto !important; box-shadow: none !important; }
+
+fieldset[role="group"] .prefix {
+  display: flex; align-items: center; padding: 0 .75rem; white-space: nowrap;
+  background: var(--pico-form-element-disabled-background-color, #f3f4f6);
+  border: var(--pico-border-width) solid var(--pico-form-element-border-color);
+  color: var(--pico-muted-color);
+}
+button.create { width: 100%; }
+#new-campaign .ts-wrapper { margin-bottom: .25rem; }
+#new-campaign small { display: block; margin-bottom: 1.25rem; }
+
+.htmx-request { opacity: .6; cursor: progress; }

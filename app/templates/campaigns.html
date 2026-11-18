@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Кампании — Keitaro wrapper{% endblock %}
+{% block content %}
+{% if error %}<p class="msg bad">{{ error }}</p>{% endif %}
+
+<section>
+  <h2>Кампании в обёртке</h2>
+  {% if local %}
+  <div class="overflow-auto">
+  <table class="striped">
+    <thead><tr><th>Название</th><th>Keitaro ID</th><th>Потоков</th><th>Состояние</th><th></th></tr></thead>
+    <tbody>
+    {% for c in local %}
+      <tr>
+        <td><a href="/campaigns/{{ c.id }}">{{ c.name }}</a></td>
+        <td>{{ c.kt_id }}</td>
+        <td>{{ c.streams|length }}</td>
+        <td>{% if c.streams|selectattr('is_dirty')|list %}<mark>есть неопубликованные правки</mark>{% else %}синхронизирована{% endif %}</td>
+        <td><a href="/campaigns/{{ c.id }}" role="button" class="btn-sm outline">Открыть</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="muted">Пока пусто. Создайте кампанию или откройте существующую из Keitaro ниже.</p>
+  {% endif %}
+</section>
+
+<section>
+  <h2>Открыть кампанию из Keitaro</h2>
+  <form method="get" action="/campaigns" role="search">
+    <input type="search" name="q" value="{{ q }}" placeholder="Часть названия">
+    <button type="submit">Найти</button>
+  </form>
+  {% if remote %}
+  <div class="overflow-auto">
+  <table class="striped">
+    <thead><tr><th>ID</th><th>Название</th><th>Состояние</th><th></th></tr></thead>
+    <tbody>
+    {% for c in remote %}
+      <tr>
+        <td>{{ c.id }}</td>
+        <td>{{ c.name }}</td>
+        <td>{{ c.state }}</td>
+        <td>
+          <form method="post" action="/campaigns/import" class="inline">
+            <input type="hidden" name="kt_id" value="{{ c.id }}">
+            <button type="submit" class="btn-sm {% if c.id not in known %}outline{% endif %}">
+              {% if c.id in known %}Открыть{% else %}Импортировать{% endif %}
+            </button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if remote_total > remote|length %}<p class="muted">Показаны первые {{ remote|length }} из {{ remote_total }}, уточните поиск.</p>{% endif %}
+  {% elif not error %}
+  <p class="muted">В Keitaro нет кампаний, в названии которых есть «{{ q }}».</p>
+  {% endif %}
+</section>
+{% endblock %}

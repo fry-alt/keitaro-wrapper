@@ -1,0 +1,12 @@
+<section id="streams">
+  {% if notice %}<p class="msg ok">{{ notice }}</p>{% endif %}
+  {% if error %}<p class="msg bad">{{ error }}</p>{% endif %}
+  {% if campaign.synced_at %}
+    <p class="muted">Синхронизировано с Keitaro: {{ campaign.synced_at.strftime('%d.%m.%Y %H:%M:%S') }} UTC</p>
+  {% endif %}
+  {% for stream in campaign.streams %}
+    {% with notice=None, error=None %}{% include "_stream.html" %}{% endwith %}
+  {% else %}
+    <p class="muted">В кампании нет потоков.</p>
+  {% endfor %}
+</section>
