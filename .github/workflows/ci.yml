@@ -1,0 +1,41 @@
+name: ci
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: pytest -v
+
+  migrations-postgres:
+    # локально тесты идут на SQLite, здесь проверяем миграции на настоящем PostgreSQL
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: keitaro_wrapper
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U app" --health-interval 2s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+psycopg://app:app@localhost:5432/keitaro_wrapper
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - run: alembic upgrade head
+      - run: alembic check
+      - run: alembic downgrade base && alembic upgrade head
