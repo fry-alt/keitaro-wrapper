@@ -8,3 +8,6 @@ __pycache__/
 .env
 data/
 .DS_Store
+.vercel
+.env*
+!.env.example
