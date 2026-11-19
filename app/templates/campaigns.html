@@ -1,64 +1,92 @@
 {% extends "base.html" %}
-{% block title %}Кампании — Keitaro wrapper{% endblock %}
+{% from "_icons.html" import icon %}
+{% block title %}Кампании — Keitaro Wrapper{% endblock %}
 {% block content %}
-{% if error %}<p class="msg bad">{{ error }}</p>{% endif %}
-
-<section>
-  <h2>Кампании в обёртке</h2>
-  {% if local %}
-  <div class="overflow-auto">
-  <table class="striped">
-    <thead><tr><th>Название</th><th>Keitaro ID</th><th>Потоков</th><th>Состояние</th><th></th></tr></thead>
-    <tbody>
-    {% for c in local %}
-      <tr>
-        <td><a href="/campaigns/{{ c.id }}">{{ c.name }}</a></td>
-        <td>{{ c.kt_id }}</td>
-        <td>{{ c.streams|length }}</td>
-        <td>{% if c.streams|selectattr('is_dirty')|list %}<mark>есть неопубликованные правки</mark>{% else %}синхронизирована{% endif %}</td>
-        <td><a href="/campaigns/{{ c.id }}" role="button" class="btn-sm outline">Открыть</a></td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+<div class="page-head">
+  <div>
+    <h1>Кампании</h1>
+    <p>Создавайте кампании и управляйте офферами в потоках Keitaro.</p>
   </div>
-  {% else %}
-  <p class="muted">Пока пусто. Создайте кампанию или откройте существующую из Keitaro ниже.</p>
-  {% endif %}
-</section>
+  <a class="btn primary" href="/campaigns/new">{{ icon("plus") }} Новая кампания</a>
+</div>
 
-<section>
-  <h2>Открыть кампанию из Keitaro</h2>
-  <form method="get" action="/campaigns" role="search">
-    <input type="search" name="q" value="{{ q }}" placeholder="Часть названия">
-    <button type="submit">Найти</button>
-  </form>
-  {% if remote %}
-  <div class="overflow-auto">
-  <table class="striped">
-    <thead><tr><th>ID</th><th>Название</th><th>Состояние</th><th></th></tr></thead>
-    <tbody>
-    {% for c in remote %}
-      <tr>
-        <td>{{ c.id }}</td>
-        <td>{{ c.name }}</td>
-        <td>{{ c.state }}</td>
-        <td>
-          <form method="post" action="/campaigns/import" class="inline">
-            <input type="hidden" name="kt_id" value="{{ c.id }}">
-            <button type="submit" class="btn-sm {% if c.id not in known %}outline{% endif %}">
-              {% if c.id in known %}Открыть{% else %}Импортировать{% endif %}
-            </button>
-          </form>
-        </td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  </div>
-  {% if remote_total > remote|length %}<p class="muted">Показаны первые {{ remote|length }} из {{ remote_total }}, уточните поиск.</p>{% endif %}
-  {% elif not error %}
-  <p class="muted">В Keitaro нет кампаний, в названии которых есть «{{ q }}».</p>
-  {% endif %}
-</section>
+{% if error %}<div class="alert bad mb">{{ icon("alert") }}<div>{{ error }}</div></div>{% endif %}
+
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head">
+      <div><h2>В работе</h2><p>Кампании, открытые в обёртке</p></div>
+      <span class="chip">{{ local|length }}</span>
+    </div>
+    {% if local %}
+    <ul class="list">
+      {% for c in local %}
+      {% set dirty = c.streams|selectattr('is_dirty')|list %}
+      <li>
+        <a class="list-item" href="/campaigns/{{ c.id }}">
+          <div class="grow">
+            <div class="title">{{ c.name }}</div>
+            <div class="meta">Keitaro #{{ c.kt_id }} · потоков: {{ c.streams|length }}</div>
+          </div>
+          {% if not settings.can_edit(c.name) %}
+            <span class="pill">только просмотр</span>
+          {% elif dirty %}
+            <span class="pill warn"><span class="dot"></span>есть правки</span>
+          {% else %}
+            <span class="pill ok"><span class="dot"></span>синхронизирована</span>
+          {% endif %}
+          <span class="chevron">{{ icon("chevron") }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty">
+      <strong>Пока пусто</strong>
+      Создайте кампанию или откройте существующую из Keitaro.
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div><h2>Открыть из Keitaro</h2><p>Поиск по названию среди кампаний трекера</p></div>
+    </div>
+    <div class="card-body">
+      <form method="get" action="/campaigns" class="search" role="search">
+        <input class="input" type="search" name="q" value="{{ q }}" placeholder="Часть названия" aria-label="Часть названия">
+        <button class="btn" type="submit">{{ icon("search") }}<span class="label">Найти</span></button>
+      </form>
+    </div>
+    {% if remote %}
+    <div class="table-scroll">
+      <table class="table">
+        <thead><tr><th>ID</th><th>Название</th><th class="right"></th></tr></thead>
+        <tbody>
+        {% for c in remote %}
+          <tr>
+            <td class="mono muted">{{ c.id }}</td>
+            <td>
+              {{ c.name }}
+              {% if c.state != "active" %}<span class="pill">{{ c.state }}</span>{% endif %}
+            </td>
+            <td class="right">
+              <form method="post" action="/campaigns/import">
+                <input type="hidden" name="kt_id" value="{{ c.id }}">
+                <button type="submit" class="btn xs {% if c.id in known %}ghost{% endif %}">
+                  {% if c.id in known %}Открыть{% else %}{{ icon("download") }} Импорт{% endif %}
+                </button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if remote_total > remote|length %}<p class="muted small card-body">Показаны первые {{ remote|length }} из {{ remote_total }} — уточните поиск.</p>{% endif %}
+    {% elif not error %}
+    <div class="empty">В Keitaro нет кампаний, в названии которых есть «{{ q }}».</div>
+    {% endif %}
+  </section>
+</div>
 {% endblock %}

@@ -108,9 +108,10 @@ def test_offer_returned_in_keitaro_becomes_active_on_fetch(db, kt, setup):
     editor.push(db, kt, stream)
     kt.kt_set_offers(stream.kt_id, [(A, 40), (B, 30), (C, 30)])
 
-    fetch_campaign(db, kt, kt_campaign.id)
+    _, report = fetch_campaign(db, kt, kt_campaign.id)
     assert shares(stream) == {A: 40, B: 30, C: 30}
     assert not row(stream, C).is_removed
+    assert report.restored == 1 and "вернулось в Keitaro: 1" in report.summary()
 
 
 def test_pinned_share_survives_changes(db, kt, setup):

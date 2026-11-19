@@ -4,12 +4,14 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app import api, web
+from app.security import SecurityMiddleware
 
 app = FastAPI(
     title="Keitaro wrapper",
     description="Создание кампаний и редактор офферов в потоках Keitaro",
     version="0.1.0",
 )
+app.add_middleware(SecurityMiddleware)
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 app.include_router(web.router)
 app.include_router(api.router)

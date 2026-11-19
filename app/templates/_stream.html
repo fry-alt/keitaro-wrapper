@@ -1,66 +1,97 @@
-{# Блок одного потока. Все кнопки внутри перерисовывают его целиком (hx-target="this"). #}
-<article class="stream {% if stream.is_dirty %}dirty{% endif %}" id="stream-{{ stream.id }}"
+{# Один поток. Все кнопки внутри перерисовывают его целиком (hx-target="this"). #}
+{% from "_icons.html" import icon %}
+{% set editable = settings.can_edit(stream.campaign.name) %}
+<article class="card stream {% if stream.is_dirty %}dirty{% endif %}" id="stream-{{ stream.id }}"
          hx-target="this" hx-swap="outerHTML">
   <header class="stream-head">
-    <div>
+    <span class="stream-pos" title="Позиция потока">{{ stream.position }}</span>
+    <div class="stream-title">
       <strong>{{ stream.name }}</strong>
-      <small class="muted">#{{ stream.position }} · stream_id {{ stream.kt_id }} · {{ stream.type }}{% if stream.schema %} · {{ stream.schema }}{% endif %}</small>
-      {% if stream.is_dirty %}<span class="badge warn">не опубликовано</span>{% endif %}
+      <div class="chips">
+        <span class="chip">stream {{ stream.kt_id }}</span>
+        <span class="chip">{{ stream.type }}</span>
+        {% if stream.schema %}<span class="chip">{{ stream.schema }}</span>{% endif %}
+        {% if stream.state and stream.state != "active" %}<span class="pill">{{ stream.state }}</span>{% endif %}
+      </div>
     </div>
     {% if stream.is_dirty %}
-    <div class="actions">
-      <button class="btn-sm push" hx-post="/streams/{{ stream.id }}/push">Push to KT</button>
-      <button class="btn-sm outline secondary" hx-post="/streams/{{ stream.id }}/cancel">Cancel</button>
+    <div class="stream-actions">
+      <span class="pill warn"><span class="dot"></span>не опубликовано</span>
+      {% if editable %}
+      <button class="btn sm" hx-post="/streams/{{ stream.id }}/cancel">{{ icon("undo") }} Cancel</button>
+      <button class="btn primary sm" hx-post="/streams/{{ stream.id }}/push"><span class="spinner"></span>{{ icon("upload") }} Push to KT</button>
+      {% endif %}
     </div>
     {% endif %}
   </header>
 
-  {% if notice %}<p class="msg ok">{{ notice }}</p>{% endif %}
-  {% if error %}<p class="msg bad">{{ error }}</p>{% endif %}
+  {% if notice %}<div class="alert ok">{{ icon("check") }}<div>{{ notice }}</div></div>{% endif %}
+  {% if error %}<div class="alert bad">{{ icon("alert") }}<div>{{ error }}</div></div>{% endif %}
 
   {% if not stream.has_offers %}
-    <p class="muted">Поток без офферов: его содержимое обёртка не разбирает.</p>
+    <p class="stream-note">Поток без офферов: обёртка показывает только его название.</p>
   {% else %}
-  <div class="overflow-auto">
-  <table class="offers">
-    <thead><tr><th>Оффер</th><th class="share">Доля</th><th class="row-actions">Действия</th></tr></thead>
+  {% set colors = {} %}
+  {% for row in stream.offers %}{% set _ = colors.update({row.id: "c" ~ ((loop.index0 % 8) + 1)}) %}{% endfor %}
+  <div class="share-bar {% if stream.share_total > 100 %}over{% endif %}" role="img"
+       aria-label="Распределение трафика: {% for row in stream.active_offers %}#{{ row.offer_id }} {{ row.draft_share }}%{% if not loop.last %}, {% endif %}{% endfor %}">
+    {% for row in stream.active_offers %}{% if row.draft_share %}<span class="{{ colors[row.id] }}" data-share="{{ row.draft_share }}" title="#{{ row.offer_id }} — {{ row.draft_share }}%"></span>{% endif %}{% endfor %}
+  </div>
+
+  <div class="table-wrap">
+  <table class="table offers">
+    <thead><tr><th>Оффер</th><th class="share-col">Доля</th><th class="actions-col"></th></tr></thead>
     <tbody>
     {% for row in stream.offers %}
       <tr class="{% if row.is_removed %}removed{% elif row.is_new %}new{% elif row.is_dirty %}changed{% endif %}">
         <td>
-          <span class="offer-name">{{ row.offer.name }}</span>
-          {%- if row.offer.state == "hidden" %}
-          <small class="muted" title="Оффер есть в Keitaro, но API-ключу закрыт на чтение, поэтому название неизвестно">(название скрыто)</small>
-          {%- endif %}
-          <small class="muted">#{{ row.offer_id }}</small>
-          {% if row.is_new %}<span class="badge new">новый</span>{% endif %}
-          {% if row.is_removed %}<span class="badge">removed</span>{% endif %}
+          <div class="offer-cell">
+            <span class="swatch {{ colors[row.id] }}"></span>
+            <div>
+              <div class="offer-name">{{ row.offer.name }}</div>
+              <div class="sub">
+                <span class="mono">#{{ row.offer_id }}</span>
+                {% if row.offer.state == "hidden" %}<span title="Оффер есть в Keitaro, но API-ключу закрыт на чтение, поэтому название неизвестно">название скрыто</span>{% endif %}
+                {% if row.is_new %}<span class="pill ok">новый</span>{% endif %}
+                {% if row.is_removed %}<span class="pill">removed</span>{% endif %}
+              </div>
+            </div>
+          </div>
         </td>
-        <td class="share">
+        <td class="share-col">
           {% if row.is_removed %}
-            <span class="share-value">0%</span>
+            <span class="share-btn" aria-disabled="true">0%</span>
+          {% elif editable %}
+            <span class="share-cell">
+              <details class="share-edit">
+                <summary class="share-btn {% if row.pinned %}pinned{% endif %}" title="Задать долю вручную">{{ row.draft_share }}%</summary>
+                <form class="share-pop" hx-post="/streams/{{ stream.id }}/offers/{{ row.id }}/pin">
+                  <label for="share-{{ row.id }}">Доля, % — будет закреплена</label>
+                  <div class="row">
+                    <input class="input" id="share-{{ row.id }}" type="number" name="share" min="0" max="100" value="{{ row.draft_share }}">
+                    <button type="submit" class="btn primary sm">ОК</button>
+                  </div>
+                </form>
+              </details>
+              <button class="pin {% if row.pinned %}on{% endif %}"
+                      title="{% if row.pinned %}Доля закреплена — открепить{% else %}Закрепить текущую долю{% endif %}"
+                      aria-pressed="{{ 'true' if row.pinned else 'false' }}"
+                      hx-post="/streams/{{ stream.id }}/offers/{{ row.id }}/{{ 'unpin' if row.pinned else 'pin' }}">{{ icon("pin") }}<span class="sr-only">Закрепить</span></button>
+            </span>
           {% else %}
-            <details class="share-edit">
-              <summary title="Задать и закрепить долю">{{ row.draft_share }}%</summary>
-              <form hx-post="/streams/{{ stream.id }}/offers/{{ row.id }}/pin">
-                <input type="number" name="share" min="0" max="100" value="{{ row.draft_share }}" aria-label="Доля, %">
-                <button type="submit" class="btn-sm">Закрепить</button>
-              </form>
-            </details>
-            <button class="pin {% if row.pinned %}on{% endif %}"
-                    title="{% if row.pinned %}Доля закреплена — открепить{% else %}Закрепить текущую долю{% endif %}"
-                    aria-pressed="{{ 'true' if row.pinned else 'false' }}"
-                    hx-post="/streams/{{ stream.id }}/offers/{{ row.id }}/{{ 'unpin' if row.pinned else 'pin' }}">📌</button>
-            {% if row.published_active and row.draft_share != row.published_share %}
-              <small class="was">было {{ row.published_share }}%</small>
-            {% endif %}
+            <span class="share-btn">{{ row.draft_share }}%</span>
+          {% endif %}
+          {% if row.published_active and row.draft_share != row.published_share %}
+            <span class="was">было <s>{{ row.published_share }}%</s></span>
           {% endif %}
         </td>
-        <td class="row-actions">
-          {% if row.is_removed %}
-            <button class="btn-sm outline" hx-post="/streams/{{ stream.id }}/offers/{{ row.id }}/restore">Bring back</button>
-          {% else %}
-            <button class="btn-sm outline secondary" hx-post="/streams/{{ stream.id }}/offers/{{ row.id }}/remove">Remove</button>
+        <td class="actions-col">
+          {% if editable %}
+            {% if row.is_removed %}
+              <button class="btn xs" hx-post="/streams/{{ stream.id }}/offers/{{ row.id }}/restore">{{ icon("undo") }} Bring back</button>
+            {% else %}
+              <button class="btn xs danger" hx-post="/streams/{{ stream.id }}/offers/{{ row.id }}/remove">{{ icon("trash") }} Remove</button>
+            {% endif %}
           {% endif %}
         </td>
       </tr>
@@ -68,17 +99,18 @@
     </tbody>
     <tfoot>
       <tr>
-        <th>Итого по активным офферам</th>
-        <th class="share {% if stream.share_total != 100 %}bad{% endif %}">{{ stream.share_total }}%</th>
-        <th></th>
+        <td>Итого по активным офферам: {{ stream.active_offers|length }}</td>
+        <td class="share-col {% if stream.share_total != 100 %}total-bad{% endif %}" colspan="2">{{ stream.share_total }}%{% if stream.share_total != 100 %} — должно быть 100%{% endif %}</td>
       </tr>
     </tfoot>
   </table>
   </div>
 
+  {% if editable %}
   <form class="add-offer" hx-post="/streams/{{ stream.id }}/offers">
-    <select name="offer_id" class="offer-search" placeholder="Добавить оффер: ID или название"></select>
-    <button type="submit" class="btn-sm">Add</button>
+    <select name="offer_id" class="offer-search" placeholder="Добавить оффер: ID или название" aria-label="Оффер"></select>
+    <button type="submit" class="btn primary sm">{{ icon("plus") }} Add</button>
   </form>
+  {% endif %}
   {% endif %}
 </article>

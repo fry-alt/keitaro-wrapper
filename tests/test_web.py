@@ -3,25 +3,6 @@
 import re
 
 import pytest
-from fastapi.testclient import TestClient
-
-from app.config import get_settings
-from app.db import get_db
-from app.deps import get_kt
-from app.main import app
-
-
-@pytest.fixture
-def client(session_factory, kt, settings):
-    def override_db():
-        with session_factory() as session:
-            yield session
-
-    app.dependency_overrides[get_db] = override_db
-    app.dependency_overrides[get_kt] = lambda: kt
-    app.dependency_overrides[get_settings] = lambda: settings
-    yield TestClient(app)
-    app.dependency_overrides.clear()
 
 
 @pytest.fixture

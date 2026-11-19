@@ -1,11 +1,13 @@
 """Подключение к базе и сессии SQLAlchemy."""
 
+import os
 from collections.abc import Iterator
 from functools import lru_cache
 from pathlib import Path
 
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
 from app.config import get_settings
 
@@ -28,6 +30,9 @@ def make_engine(url: str) -> Engine:
             dbapi_conn.execute("PRAGMA foreign_keys=ON")
 
         return engine
+    if os.environ.get("VERCEL"):
+        # serverless: экземпляр живёт недолго, держать пул открытых соединений незачем
+        return create_engine(url, poolclass=NullPool)
     return create_engine(url, pool_pre_ping=True)
 
 

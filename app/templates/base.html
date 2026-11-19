@@ -1,33 +1,56 @@
+{% from "_icons.html" import icon %}
 <!doctype html>
-<html lang="ru" data-theme="light">
+<html lang="ru">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Keitaro wrapper{% endblock %}</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.0.6/css/pico.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.default.min.css">
+  <meta name="color-scheme" content="light dark">
+  <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false, "allowScriptTags": false, "selfRequestsOnly": true}'>
+  <title>{% block title %}Keitaro Wrapper{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', path='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', path='vendor/tom-select.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}">
-  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
+  <script src="{{ url_for('static', path='vendor/htmx.min.js') }}" defer></script>
+  <script src="{{ url_for('static', path='vendor/tom-select.complete.min.js') }}" defer></script>
   <script src="{{ url_for('static', path='app.js') }}" defer></script>
 </head>
 <body>
-  <header class="container">
-    <nav>
-      <ul><li><a href="/campaigns" class="brand">Keitaro wrapper</a></li></ul>
-      <ul>
-        <li><a href="/campaigns">Кампании</a></li>
-        <li><a href="/campaigns/new" role="button" class="btn-sm">Новая кампания</a></li>
-      </ul>
-    </nav>
-    {% if settings.keitaro_fake %}
-      <p class="banner demo">Демо-режим: Keitaro в памяти, настоящий трекер не используется</p>
-    {% elif not settings.keitaro_api_key %}
-      <p class="banner bad">Не задан KEITARO_API_KEY — укажите ключ в файле .env</p>
-    {% endif %}
+  {% set path = request.url.path %}
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="/campaigns" class="brand">
+        <span class="brand-mark">{{ icon("logo") }}</span>
+        <span class="brand-text">Keitaro Wrapper<small>кампании и офферы</small></span>
+      </a>
+      {% if not hide_nav %}
+      <nav class="nav" aria-label="Разделы">
+        <a href="/campaigns" {% if path == "/campaigns" or (path.startswith("/campaigns/") and path != "/campaigns/new") %}aria-current="page"{% endif %}>Кампании</a>
+        <a href="/campaigns/new" {% if path == "/campaigns/new" %}aria-current="page"{% endif %}>Создать</a>
+        <a href="/docs" class="nav-api">API</a>
+      </nav>
+      {% endif %}
+      <div class="topbar-right">
+        {% if settings.keitaro_fake %}
+          <span class="pill accent" title="Keitaro в памяти, настоящий трекер не используется"><span class="dot"></span>Демо-режим</span>
+        {% elif not settings.keitaro_api_key %}
+          <span class="pill bad"><span class="dot"></span>Нет API-ключа</span>
+        {% else %}
+          <span class="pill ok" title="{{ settings.keitaro_url }}"><span class="dot"></span>{{ settings.keitaro_url.split('://')[-1] }}</span>
+        {% endif %}
+        {% if settings.app_password and not hide_nav %}
+        <form method="post" action="/logout">
+          <button class="btn ghost sm" type="submit" title="Выйти">{{ icon("logout") }}<span class="sr-only">Выйти</span></button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
   </header>
-  <main class="container">
+  <main class="page">
+    {% if not settings.keitaro_fake and not settings.keitaro_api_key %}
+      <div class="alert bad mb">{{ icon("alert") }}<div>Не задан <code>KEITARO_API_KEY</code>. Укажите ключ Admin API в файле <code>.env</code> или в переменных окружения.</div></div>
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
 </body>
 </html>

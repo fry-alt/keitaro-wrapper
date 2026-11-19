@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% set hide_nav = true %}
+{% block title %}Вход — Keitaro Wrapper{% endblock %}
+{% block content %}
+<div class="auth">
+  <div class="card">
+    <div class="card-body">
+      <h1>Вход</h1>
+      <p class="muted">Приложение управляет кампаниями в Keitaro, поэтому закрыто паролем.</p>
+      {% if error %}<div class="alert bad mb">{{ icon("alert") }}<div>{{ error }}</div></div>{% endif %}
+      <form method="post" action="/login">
+        <input type="hidden" name="next" value="{{ next }}">
+        <div class="field">
+          <label for="password">Пароль</label>
+          <input class="input" type="password" id="password" name="password" required autofocus autocomplete="current-password">
+        </div>
+        <button class="btn primary block" type="submit">{{ icon("lock") }} Войти</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

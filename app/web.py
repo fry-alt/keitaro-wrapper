@@ -1,5 +1,6 @@
 """HTML-страницы и HTMX-действия редактора."""
 
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated
@@ -15,6 +16,7 @@ from app.db import get_db
 from app.deps import get_kt
 from app.keitaro import KeitaroAPI, KeitaroError
 from app.models import Campaign, Offer, Stream
+from app.security import COOKIE, SESSION_TTL, is_https, make_token, password_ok, safe_next
 from app.services import editor
 from app.services.countries import countries
 from app.services.creator import create_campaign
@@ -43,6 +45,52 @@ def see_other(url: str) -> RedirectResponse:
 @router.get("/", include_in_schema=False)
 def index():
     return see_other("/campaigns")
+
+
+# --- вход ---
+
+
+@router.get("/login", response_class=HTMLResponse, include_in_schema=False)
+def login_page(request: Request, settings: Conf, next: str = "/campaigns"):
+    if not settings.app_password:
+        return see_other(safe_next(next))
+    return render(request, "login.html", settings, next=safe_next(next))
+
+
+@router.post("/login", include_in_schema=False)
+def login_submit(
+    request: Request,
+    settings: Conf,
+    password: Annotated[str, Form()] = "",
+    next: Annotated[str, Form()] = "/campaigns",
+):
+    if not password_ok(settings, password):
+        time.sleep(1)  # замедляем перебор паролей
+        return render(
+            request,
+            "login.html",
+            settings,
+            status_code=401,
+            next=safe_next(next),
+            error="Неверный пароль",
+        )
+    response = see_other(safe_next(next))
+    response.set_cookie(
+        COOKIE,
+        make_token(settings),
+        max_age=SESSION_TTL,
+        httponly=True,
+        secure=is_https(request),
+        samesite="lax",
+    )
+    return response
+
+
+@router.post("/logout", include_in_schema=False)
+def logout():
+    response = see_other("/login")
+    response.delete_cookie(COOKIE)
+    return response
 
 
 # --- список кампаний ---
@@ -166,6 +214,11 @@ def stream_action(
         return HTMLResponse(exc.message, status_code=404)
     notice = error = None
     try:
+        if not settings.can_edit(stream.campaign.name):
+            raise UserError(
+                f"Кампания без префикса {settings.campaign_prefix}: "
+                "её можно смотреть, но не править"
+            )
         notice = action(stream)
     except Errors as exc:
         db.rollback()

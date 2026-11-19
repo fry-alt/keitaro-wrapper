@@ -26,12 +26,15 @@ class SyncReport:
     added: int = 0
     removed: int = 0
     changed: int = 0
+    restored: int = 0
     discarded_drafts: int = 0
 
     def summary(self) -> str:
         parts = [f"потоков: {self.streams}"]
         if self.added:
             parts.append(f"новых офферов: {self.added}")
+        if self.restored:
+            parts.append(f"вернулось в Keitaro: {self.restored}")
         if self.removed:
             parts.append(f"удалено в Keitaro: {self.removed}")
         if self.changed:
@@ -108,6 +111,8 @@ def _sync_offers(stream: Stream, kt_stream: KtStream, report: SyncReport) -> Non
             share = remote[row.offer_id]
             if row.published_active and row.published_share != share:
                 report.changed += 1
+            elif row.published_active is False:
+                report.restored += 1
             row.published_active = row.draft_active = True
             row.published_share = row.draft_share = share
         elif row.is_new:

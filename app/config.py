@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,8 +26,27 @@ class Settings(BaseSettings):
     default_traffic_source: str = "FORTESTS"
     redirect_url: str = "https://google.com"
 
+    # Безопасность. Пароль входа: пустой — вход не нужен (только для локального запуска)
+    app_password: str = ""
+    # Ключ подписи cookie. Пустой — выводится из пароля
+    secret_key: str = ""
+    # Править можно только кампании с CAMPAIGN_PREFIX. True — любые (осторожно: трекер общий)
+    edit_any_campaign: bool = False
+
     # Через сколько секунд кэш офферов считается устаревшим
     offers_cache_ttl: int = 600
+
+    @field_validator("database_url")
+    @classmethod
+    def _use_psycopg(cls, url: str) -> str:
+        # Neon, Heroku и другие отдают postgres://… — SQLAlchemy нужен явный драйвер
+        for scheme in ("postgres://", "postgresql://"):
+            if url.startswith(scheme):
+                return "postgresql+psycopg://" + url.removeprefix(scheme)
+        return url
+
+    def can_edit(self, campaign_name: str) -> bool:
+        return self.edit_any_campaign or campaign_name.startswith(self.campaign_prefix)
 
     @property
     def keitaro_admin_url(self) -> str:

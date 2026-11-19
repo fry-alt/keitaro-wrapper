@@ -1,5 +1,8 @@
 {% extends "base.html" %}
+{% block title %}Не найдено — Keitaro Wrapper{% endblock %}
 {% block content %}
-<h2>Не найдено</h2>
-<p>Такой кампании нет. <a href="/campaigns">К списку кампаний</a></p>
+<div class="card"><div class="empty">
+  <strong>Такой кампании нет</strong>
+  Возможно, её удалили. <a href="/campaigns">Вернуться к списку</a>
+</div></div>
 {% endblock %}

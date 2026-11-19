@@ -1,39 +1,75 @@
 {% extends "base.html" %}
-{% block title %}Новая кампания — Keitaro wrapper{% endblock %}
+{% from "_icons.html" import icon %}
+{% block title %}Новая кампания — Keitaro Wrapper{% endblock %}
 {% block content %}
-<article class="narrow">
-  <header><h2>Новая кампания</h2></header>
-  {% if error %}<p class="msg bad">{{ error }}</p>{% endif %}
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="/campaigns">Кампании</a> / Новая</div>
+    <h1>Новая кампания</h1>
+    <p>Кампания с двумя потоками: гео на Google и все остальные — на оффер.</p>
+  </div>
+</div>
 
-  <form method="post" action="/campaigns/new" id="new-campaign">
-    <label for="name">Name</label>
-    <fieldset role="group">
-      <span class="prefix">{{ settings.campaign_prefix }}</span>
-      <input id="name" name="name" required autocomplete="off" placeholder="campaign1"
-             value="{{ (form.name or '')|replace(settings.campaign_prefix, '', 1) }}">
-    </fieldset>
+<div class="create-layout">
+  <form class="card" method="post" action="/campaigns/new" id="new-campaign">
+    <div class="card-body">
+      {% if error %}<div class="alert bad mb">{{ icon("alert") }}<div>{{ error }}</div></div>{% endif %}
 
-    <label for="country">Geo</label>
-    <select id="country" name="country" multiple class="country-select" placeholder="Страны, например AU">
-      {% for code, title in countries.items() %}
-        <option value="{{ code }}" {% if code in (form.countries or []) %}selected{% endif %}>{{ code }} — {{ title }}</option>
-      {% endfor %}
-    </select>
-    <small>Всех из этих стран первый поток отправит на {{ settings.redirect_url }}</small>
+      <div class="field">
+        <label for="name">Name</label>
+        <div class="input-group">
+          <span class="addon" id="prefix">{{ settings.campaign_prefix }}</span>
+          <input class="input" id="name" name="name" required autocomplete="off" placeholder="campaign1"
+                 maxlength="150" aria-describedby="prefix"
+                 value="{{ (form.name or '')|replace(settings.campaign_prefix, '', 1) }}">
+        </div>
+        <span class="hint">Префикс добавляется автоматически.</span>
+      </div>
 
-    <label for="offer_id">Offer</label>
-    <select id="offer_id" name="offer_id" class="offer-search" placeholder="Поиск оффера по ID или названию">
-      {% if form.offer %}<option value="{{ form.offer.id }}" selected>[{{ form.offer.id }}] {{ form.offer.name }}</option>{% endif %}
-    </select>
-    <small>Остальных второй поток отправит на этот оффер</small>
+      <div class="field">
+        <label for="country">Geo</label>
+        <select id="country" name="country" multiple class="country-select" placeholder="Например, AU">
+          {% for code, title in countries.items() %}
+            <option value="{{ code }}" {% if code in (form.countries or []) %}selected{% endif %}>{{ code }} — {{ title }}</option>
+          {% endfor %}
+        </select>
+        <span class="hint">Посетителей из этих стран первый поток отправит на {{ settings.redirect_url }}.</span>
+      </div>
 
-    <button type="submit" class="create">Create</button>
+      <div class="field">
+        <label for="offer_id">Offer</label>
+        <select id="offer_id" name="offer_id" class="offer-search" placeholder="ID или название оффера">
+          {% if form.offer %}<option value="{{ form.offer.id }}" selected>[{{ form.offer.id }}] {{ form.offer.name }}</option>{% endif %}
+        </select>
+        <span class="hint">Остальной трафик пойдёт на этот оффер. Можно ввести ID оффера, которого нет в списке.</span>
+      </div>
+
+      <button type="submit" class="btn primary block">
+        <span class="spinner"></span>{{ icon("check") }} Create
+      </button>
+    </div>
   </form>
 
-  <footer class="muted">
-    Домен <code>{{ settings.default_domain }}</code> ·
-    группа <code>{{ settings.default_group }}</code> ·
-    источник <code>{{ settings.default_traffic_source }}</code>
-  </footer>
-</article>
+  <aside class="card preview" aria-label="Что будет создано">
+    <div class="card-head"><div><h2>Что будет создано</h2><p>Обновляется по мере заполнения</p></div></div>
+    <div class="card-body">
+      <div class="flow">
+        <div class="flow-step">
+          <span class="n">1</span>
+          <div><b>Гео → Google</b><span>Страны: <span id="pv-geo">не выбраны</span> → {{ settings.redirect_url }}</span></div>
+        </div>
+        <div class="flow-step">
+          <span class="n">2</span>
+          <div><b>Остальные → оффер</b><span id="pv-offer">оффер не выбран</span></div>
+        </div>
+      </div>
+      <dl class="kv">
+        <dt>Название</dt><dd id="pv-name" data-prefix="{{ settings.campaign_prefix }}">{{ settings.campaign_prefix }}…</dd>
+        <dt>Домен</dt><dd>{{ settings.default_domain }}</dd>
+        <dt>Группа</dt><dd>{{ settings.default_group }}</dd>
+        <dt>Источник</dt><dd>{{ settings.default_traffic_source }}</dd>
+      </dl>
+    </div>
+  </aside>
+</div>
 {% endblock %}

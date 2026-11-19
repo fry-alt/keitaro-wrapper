@@ -1,34 +1,39 @@
 {% extends "base.html" %}
-{% block title %}{{ campaign.name }} — Keitaro wrapper{% endblock %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ campaign.name }} — Keitaro Wrapper{% endblock %}
 {% block content %}
-<nav aria-label="breadcrumb">
-  <ul><li><a href="/campaigns">Кампании</a></li><li>{{ campaign.name }}</li></ul>
-</nav>
+{% set editable = settings.can_edit(campaign.name) %}
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="/campaigns">Кампании</a> / {{ campaign.name }}</div>
+    <h1>{{ campaign.name }}</h1>
+    <div class="campaign-meta">
+      <span class="chip">Keitaro #{{ campaign.kt_id }}</span>
+      {% if campaign.state and campaign.state != "active" %}<span class="pill">{{ campaign.state }}</span>{% endif %}
+      {% if campaign.url %}
+      <span class="link-box">
+        <a href="{{ campaign.url }}" target="_blank" rel="noopener noreferrer">{{ campaign.url }}</a>
+        <button class="btn ghost xs" type="button" data-copy="{{ campaign.url }}" title="Скопировать ссылку">{{ icon("copy") }}</button>
+      </span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="toolbar">
+    <button class="btn" hx-post="/campaigns/{{ campaign.id }}/fetch" hx-target="#streams" hx-swap="outerHTML"
+            data-confirm-dirty="Есть неопубликованные изменения. Fetch заменит их тем, что сейчас в Keitaro. Продолжить?">
+      <span class="spinner"></span>{{ icon("refresh") }} Fetch streams from KT
+    </button>
+    <a class="btn ghost" target="_blank" rel="noopener noreferrer"
+       href="{{ settings.keitaro_admin_url }}#!/campaigns/{{ campaign.kt_id }}">View in KT {{ icon("external") }}</a>
+  </div>
+</div>
 
 {% if created %}
-<p class="msg ok">
-  Кампания создана в Keitaro.
-  {% if campaign.url %}Ссылка для трафика: <code>{{ campaign.url }}</code>
-  <button class="btn-sm outline copy" data-copy="{{ campaign.url }}">Копировать</button>{% endif %}
-</p>
+<div class="alert ok mb">{{ icon("check") }}<div>Кампания создана в Keitaro.{% if campaign.url %} Ссылка для трафика: <code>{{ campaign.url }}</code>{% endif %}</div></div>
 {% endif %}
-
-<hgroup>
-  <h2>{{ campaign.name }}</h2>
-  <p>
-    Keitaro #{{ campaign.kt_id }}
-    {% if campaign.url %} · <a href="{{ campaign.url }}" target="_blank" rel="noopener">{{ campaign.url }}</a>{% endif %}
-  </p>
-</hgroup>
-
-<div class="toolbar">
-  <button hx-post="/campaigns/{{ campaign.id }}/fetch" hx-target="#streams" hx-swap="outerHTML"
-          data-confirm-dirty="Есть неопубликованные изменения. Fetch заменит их тем, что сейчас в Keitaro. Продолжить?">
-    Fetch streams from KT
-  </button>
-  <a role="button" class="outline secondary" target="_blank" rel="noopener"
-     href="{{ settings.keitaro_admin_url }}#!/campaigns/{{ campaign.kt_id }}">View in KT ↗</a>
-</div>
+{% if not editable %}
+<div class="alert info mb">{{ icon("lock") }}<div>Кампания без префикса <code>{{ settings.campaign_prefix }}</code>: её можно смотреть и синхронизировать, но не править. Трекер общий, чужие кампании не трогаем.</div></div>
+{% endif %}
 
 {% include "_streams.html" %}
 {% endblock %}
