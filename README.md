@@ -184,12 +184,13 @@ postgresql+psycopg://app:app@localhost:5432/keitaro_wrapper
 
 ## Деплой на Vercel
 
-Vercel запускает FastAPI как serverless-функцию (`api/index.py`, `vercel.json`). Нужна внешняя PostgreSQL: файловая SQLite на serverless не сохраняется. Подойдёт Neon из Vercel Marketplace.
+Vercel запускает FastAPI как serverless-функцию: точка входа — `index.py` в корне. Нужна внешняя PostgreSQL: файловая SQLite на serverless не сохраняется. Подойдёт Neon из Vercel Marketplace.
 
 1. Создайте проект и подключите базу: `vercel link`, затем `vercel integration add neon`. Можно и вручную задать `DATABASE_URL`: адрес вида `postgres://…` приложение само переводит на драйвер psycopg.
 2. Задайте переменные окружения: `KEITARO_API_KEY`, `CAMPAIGN_PREFIX`, `APP_PASSWORD`, `SECRET_KEY` (`vercel env add …`).
 3. Примените миграции к этой базе со своей машины: `DATABASE_URL=<адрес из Vercel> alembic upgrade head`.
 4. Выложите: `vercel deploy --prod`.
+5. Проверьте: `curl https://<проект>.vercel.app/healthz?deep=1` должен вернуть `{"status":"ok","db":"ok","keitaro":"ok"}`. Глубокая проверка публичная, но отдаёт только ok/fail и кэшируется на минуту.
 
 Зависимости для Vercel закреплены в `requirements.txt`. На serverless соединения с базой не держатся в пуле (`NullPool`).
 
@@ -217,7 +218,7 @@ app/
     offers.py           # локальный каталог офферов и поиск
     countries.py        # справочник стран ISO 3166
   templates/, static/   # интерфейс
-api/index.py            # точка входа для Vercel
+index.py                # точка входа для Vercel
 migrations/             # Alembic
 tests/
 ```

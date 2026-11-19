@@ -8,3 +8,6 @@ data
 .ruff_cache
 .hypothesis
 __pycache__
+tests
+.github
+docs

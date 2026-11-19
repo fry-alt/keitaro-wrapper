@@ -145,3 +145,17 @@ def test_offer_names_are_escaped(client, kt):
     page = client.get(location).text
     assert "<script>alert(1)</script>" not in page
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in page
+
+
+def test_deep_health_reports_only_status(client, monkeypatch):
+    import app.main as main
+
+    main._deep_cache.clear()
+    monkeypatch.setattr(main, "_check_db", lambda: "ok")
+    monkeypatch.setattr(main, "_check_keitaro", lambda s: "fail")
+    response = client.get("/healthz", params={"deep": 1})
+    assert response.status_code == 503
+    assert response.json() == {"status": "degraded", "db": "ok", "keitaro": "fail"}
+    monkeypatch.setattr(main, "_check_keitaro", lambda s: "ok")
+    assert client.get("/healthz", params={"deep": 1}).status_code == 503  # кэш на минуту
+    main._deep_cache.clear()
