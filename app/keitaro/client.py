@@ -41,6 +41,7 @@ class KeitaroAPI(Protocol):
     def create_stream(self, payload: dict[str, Any]) -> KtStream: ...
     def update_stream(self, stream_id: int, payload: dict[str, Any]) -> KtStream: ...
     def list_offers(self) -> list[KtOffer]: ...
+    def get_offer(self, offer_id: int) -> KtOffer: ...
     def list_domains(self) -> list[KtDomain]: ...
     def list_groups(self, group_type: str = "campaigns") -> list[KtGroup]: ...
     def list_traffic_sources(self) -> list[KtTrafficSource]: ...
@@ -134,6 +135,9 @@ class KeitaroClient:
     def list_offers(self) -> list[KtOffer]:
         return [KtOffer.model_validate(o) for o in self._request("GET", "/offers")]
 
+    def get_offer(self, offer_id: int) -> KtOffer:
+        return KtOffer.model_validate(self._request("GET", f"/offers/{offer_id}"))
+
     def list_domains(self) -> list[KtDomain]:
         return [KtDomain.model_validate(d) for d in self._request("GET", "/domains")]
 
@@ -149,6 +153,8 @@ def _error_text(response: httpx.Response) -> str:
     """Достаёт из ответа Keitaro понятный текст ошибки."""
     if response.status_code == 401:
         return "Keitaro отклонил API-ключ (401). Проверьте KEITARO_API_KEY"
+    if response.status_code == 403:
+        return "Keitaro не дал доступа (403): у пользователя API-ключа нет прав на этот объект"
     if response.status_code == 404:
         return "Объект не найден в Keitaro (404)"
     detail = ""

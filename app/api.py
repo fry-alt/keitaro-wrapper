@@ -14,7 +14,7 @@ from app.keitaro import KeitaroAPI, KeitaroError
 from app.models import Campaign
 from app.services.creator import create_campaign
 from app.services.errors import NotFoundError, UserError
-from app.services.offers import refresh_if_stale, search_offers
+from app.services.offers import placeholder_name, refresh_if_stale, search_offers
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -98,9 +98,17 @@ def offers(db: Db, kt: Kt, settings: Conf, q: str = ""):
     # если Keitaro недоступен, ищем по тому, что уже скачано
     with suppress(KeitaroError):
         refresh_if_stale(db, kt, settings.offers_cache_ttl)
-    return [
+    found = [
         OfferOut(id=o.id, name=o.name, label=f"[{o.id}] {o.name}") for o in search_offers(db, q)
     ]
+    # часть офферов ключу не видна, но в поток ставится: даём выбрать их по ID.
+    # Существует ли такой оффер, проверим при добавлении
+    query = q.strip()
+    if query.isdigit() and all(o.id != int(query) for o in found):
+        found.insert(
+            0, OfferOut(id=int(query), name=placeholder_name(int(query)), label=f"[{query}] по ID")
+        )
+    return found
 
 
 @router.post("/campaigns", response_model=CampaignOut, status_code=201)

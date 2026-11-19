@@ -50,6 +50,8 @@ class KtCampaign(KtModel):
     state: str = "active"
     type: str | None = None
     domain_id: int | None = None
+    # полный адрес, например "https://kylovoa.com/"
+    domain: str | None = None
     group_id: int | None = None
     traffic_source_id: int | None = None
 

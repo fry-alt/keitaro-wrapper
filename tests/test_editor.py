@@ -193,6 +193,28 @@ def test_unknown_offer(db, kt, setup):
         editor.add_offer(db, kt, setup[2], 999999)
 
 
+def test_offer_hidden_from_api_key_can_be_added(db, kt, setup):
+    # в настоящем трекере часть офферов ключу не видна (GET -> 403), но в поток ставится
+    kt_campaign, _, stream = setup
+    kt.hidden_offers.add(18814)
+    editor.add_offer(db, kt, stream, 18814)
+    assert row(stream, 18814).offer.name == "Оффер #18814"
+    editor.push(db, kt, stream)
+    assert kt_shares(kt, kt_campaign.id) == {A: 25, B: 25, C: 25, 18814: 25}
+
+
+def test_hidden_offer_added_in_keitaro_shows_up_on_fetch(db, kt, setup):
+    kt_campaign, campaign, stream = setup
+    kt.hidden_offers.add(18814)
+    kt.kt_set_offers(kt.offer_stream(kt_campaign.id).id, [(A, 50), (18814, 50)])
+    fetch_campaign(db, kt, kt_campaign.id)
+    assert shares(stream) == {A: 50, B: 0, C: 0, 18814: 50}
+    assert row(stream, 18814).offer.state == "hidden"
+    # закрытый оффер не считается удалённым при обновлении каталога
+    fetch_campaign(db, kt, kt_campaign.id)
+    assert row(stream, 18814).offer.state == "hidden"
+
+
 def test_stream_without_offers_is_read_only(db, kt, setup):
     _, campaign, _ = setup
     with pytest.raises(UserError, match="нет офферов"):

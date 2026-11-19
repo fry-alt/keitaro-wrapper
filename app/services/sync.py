@@ -58,7 +58,9 @@ def fetch_campaign(db: Session, kt: KeitaroAPI, kt_campaign_id: int) -> tuple[Ca
     campaign.name = kt_campaign.name
     campaign.alias = kt_campaign.alias
     campaign.state = kt_campaign.state
-    if kt_campaign.domain_id:
+    if kt_campaign.domain:
+        campaign.domain = domain_url(kt_campaign.domain)
+    elif kt_campaign.domain_id:
         names = {d.id: d.name for d in kt.list_domains()}
         if kt_campaign.domain_id in names:
             campaign.domain = domain_url(names[kt_campaign.domain_id])

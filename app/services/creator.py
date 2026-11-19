@@ -16,7 +16,7 @@ from app.keitaro import KeitaroAPI, KeitaroError
 from app.models import Campaign
 from app.services.countries import parse_countries
 from app.services.errors import UserError
-from app.services.offers import get_active_offer
+from app.services.offers import resolve_offer
 from app.services.sync import fetch_campaign
 
 ALIAS_ALPHABET = string.ascii_letters + string.digits
@@ -148,7 +148,7 @@ def create_campaign(
     # сначала проверяем всё, что можно, чтобы не создавать в Keitaro полуфабрикат
     full_name = normalize_name(name, settings.campaign_prefix)
     country_codes = parse_countries(countries)
-    get_active_offer(db, kt, offer_id)
+    resolve_offer(db, kt, offer_id)
     refs = resolve_refs(kt, settings)
 
     kt_campaign = kt.create_campaign(campaign_payload(full_name, generate_alias(), refs))

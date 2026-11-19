@@ -110,6 +110,13 @@ def test_api_offers(client):
     assert data[0]["label"].startswith("[3749]")
 
 
+def test_api_offers_by_id(client):
+    # ID, которого нет в каталоге, всё равно можно выбрать: проверка будет при добавлении
+    data = client.get("/api/offers", params={"q": "18814"}).json()
+    assert data[0]["id"] == 18814 and "по ID" in data[0]["label"]
+    assert client.get("/api/offers", params={"q": "3749"}).json()[0]["label"].startswith("[3749] M")
+
+
 def test_api_create_campaign(client):
     response = client.post(
         "/api/campaigns", json={"name": "api1", "countries": ["AU"], "offer_id": 3749}

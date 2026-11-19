@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.keitaro import KeitaroAPI
 from app.models import Stream, StreamOffer, utcnow
 from app.services.errors import ConflictError, NotFoundError, UserError
-from app.services.offers import get_active_offer
+from app.services.offers import resolve_offer
 from app.services.shares import ShareError, Slot, allocate, total_problem
 
 ACTIVE = "active"
@@ -60,7 +60,7 @@ def add_offer(db: Session, kt: KeitaroAPI, stream: Stream, offer_id: int) -> Str
                     "Этот оффер уже есть в потоке среди удалённых — верните его кнопкой Bring back"
                 )
             raise UserError("Этот оффер уже есть в потоке")
-    get_active_offer(db, kt, offer_id)
+    resolve_offer(db, kt, offer_id)
     row = StreamOffer(
         offer_id=offer_id,
         position=max((r.position for r in stream.offers), default=0) + 1,

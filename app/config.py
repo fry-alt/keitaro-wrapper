@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     # Создание кампаний
     campaign_prefix: str = Field("test_", description="Префикс имени, например test_ivanov_")
-    default_domain: str = "in.posdk.xyz"
+    default_domain: str = "kylovoa.com"
     default_group: str = "FORTESTS"
     default_traffic_source: str = "FORTESTS"
     redirect_url: str = "https://google.com"

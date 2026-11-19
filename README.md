@@ -70,7 +70,7 @@ postgresql+psycopg://app:app@localhost:5432/keitaro_wrapper
 | `KEITARO_URL` | `https://tlgk.host` | адрес трекера без `/admin` |
 | `KEITARO_API_KEY` | — | ключ Admin API (в админке: Maintenance → Users → API Keys) |
 | `CAMPAIGN_PREFIX` | `test_` | префикс имени кампании, например `test_ivanov_` |
-| `DEFAULT_DOMAIN` | `in.posdk.xyz` | домен новых кампаний |
+| `DEFAULT_DOMAIN` | `kylovoa.com` | домен новых кампаний |
 | `DEFAULT_GROUP` | `FORTESTS` | группа новых кампаний |
 | `DEFAULT_TRAFFIC_SOURCE` | `FORTESTS` | источник новых кампаний |
 | `REDIRECT_URL` | `https://google.com` | куда первый поток отправляет трафик из выбранных стран |
@@ -129,6 +129,8 @@ postgresql+psycopg://app:app@localhost:5432/keitaro_wrapper
 - **Fetch**: опубликованное = данные Keitaro (Keitaro — источник правды).
 
 Остальные таблицы: `campaigns`, `streams` и `offers` (локальная копия каталога офферов). У `GET /offers` в Keitaro нет поиска, поэтому каталог скачивается целиком и автодополнение ищет по своей базе. Копия обновляется, если старше `OFFERS_CACHE_TTL`.
+
+Права в Keitaro устроены так, что часть офферов API-ключу не видна: `GET /offers/{id}` отвечает 403, но в поток такой оффер ставится. Поэтому в поиске можно ввести ID любого оффера. При добавлении приложение спрашивает Keitaro напрямую: 403 значит «оффер есть, название скрыто» (он показывается как «Оффер #ID»), 404 значит «оффера нет», и добавление отклоняется.
 
 ### Расчёт долей
 

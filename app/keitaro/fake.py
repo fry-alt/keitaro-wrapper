@@ -27,6 +27,9 @@ class FakeKeitaro:
         self.campaigns: dict[int, KtCampaign] = {}
         self.streams: dict[int, KtStream] = {}
         self.offers: dict[int, KtOffer] = {}
+        # офферы, которые существуют, но пользователю ключа не видны: GET отвечает 403,
+        # а поставить их в поток можно (так устроены права в настоящем трекере)
+        self.hidden_offers: set[int] = set()
         self.domains: list[KtDomain] = []
         self.groups: list[KtGroup] = []
         self.traffic_sources: list[KtTrafficSource] = []
@@ -37,7 +40,7 @@ class FakeKeitaro:
     # --- наполнение для тестов ---
 
     def seed_defaults(self) -> "FakeKeitaro":
-        self.domains = [KtDomain(id=1, name="in.posdk.xyz")]
+        self.domains = [KtDomain(id=1, name="kylovoa.com")]
         self.groups = [KtGroup(id=7, name="FORTESTS", type="campaigns")]
         self.traffic_sources = [KtTrafficSource(id=9, name="FORTESTS")]
         for offer_id, name in [
@@ -105,7 +108,7 @@ class FakeKeitaro:
     def _build_offers(self, offers: list[dict[str, Any]]) -> list[KtStreamOffer]:
         built = []
         for item in offers:
-            if item["offer_id"] not in self.offers:
+            if item["offer_id"] not in self.offers and item["offer_id"] not in self.hidden_offers:
                 raise KeitaroError(f"Offer {item['offer_id']} not found", 422)
             built.append(
                 KtStreamOffer(
@@ -136,7 +139,16 @@ class FakeKeitaro:
             raise KeitaroError("name and alias are required", 422)
         if any(c.alias == payload["alias"] for c in self.campaigns.values()):
             raise KeitaroError("Alias already exists", 422)
-        campaign = KtCampaign.model_validate({"state": "active", **payload, "id": next(self._ids)})
+        # как настоящий Keitaro, отдаём полный адрес домена кампании
+        domain = next((d.name for d in self.domains if d.id == payload.get("domain_id")), None)
+        campaign = KtCampaign.model_validate(
+            {
+                "state": "active",
+                **payload,
+                "id": next(self._ids),
+                "domain": f"https://{domain}/" if domain else None,
+            }
+        )
         self.campaigns[campaign.id] = campaign
         return self._copy(campaign)
 
@@ -191,6 +203,14 @@ class FakeKeitaro:
     def list_offers(self) -> list[KtOffer]:
         self._call("list_offers")
         return [o.model_copy() for o in self.offers.values()]
+
+    def get_offer(self, offer_id: int) -> KtOffer:
+        self._call("get_offer")
+        if offer_id in self.hidden_offers:
+            raise KeitaroError("Keitaro не дал доступа (403)", 403)
+        if offer_id not in self.offers:
+            raise KeitaroError("Объект не найден в Keitaro (404)", 404)
+        return self.offers[offer_id].model_copy()
 
     def list_domains(self) -> list[KtDomain]:
         self._call("list_domains")

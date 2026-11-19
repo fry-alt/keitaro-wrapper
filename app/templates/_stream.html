@@ -29,6 +29,9 @@
       <tr class="{% if row.is_removed %}removed{% elif row.is_new %}new{% elif row.is_dirty %}changed{% endif %}">
         <td>
           <span class="offer-name">{{ row.offer.name }}</span>
+          {%- if row.offer.state == "hidden" %}
+          <small class="muted" title="Оффер есть в Keitaro, но API-ключу закрыт на чтение, поэтому название неизвестно">(название скрыто)</small>
+          {%- endif %}
           <small class="muted">#{{ row.offer_id }}</small>
           {% if row.is_new %}<span class="badge new">новый</span>{% endif %}
           {% if row.is_removed %}<span class="badge">removed</span>{% endif %}

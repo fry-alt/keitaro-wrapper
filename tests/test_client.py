@@ -61,6 +61,7 @@ def test_does_not_retry_post():
     ("response", "message"),
     [
         (httpx.Response(401, json={"error": "Unauthorized"}), "API-ключ"),
+        (httpx.Response(403, json={"error": "Forbidden"}), "нет прав"),
         (httpx.Response(404), "не найден"),
         (httpx.Response(422, json={"error": "Alias is taken"}), "Alias is taken"),
         (httpx.Response(500, text="<html>oops</html>"), "oops"),

@@ -28,7 +28,7 @@ def test_creates_campaign_with_two_streams(db, kt, settings):
     assert [(o.offer_id, o.share) for o in offers.offers] == [(3749, 100)]
 
     # кампания сразу сохранена у нас и готова к редактированию
-    assert campaign.url == f"https://in.posdk.xyz/{kt_campaign.alias}"
+    assert campaign.url == f"https://kylovoa.com/{kt_campaign.alias}"
     assert [s.has_offers for s in campaign.streams] == [False, True]
 
 
